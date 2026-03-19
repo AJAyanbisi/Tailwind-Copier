@@ -182,4 +182,4 @@ MIT
 
 ---
 
-Built by [Akorede J. Ayanbisi](https://github.com/AJAyanbisi), with ❤️ for the Figma community.
+Built by [Akorede J. Ayanbisi](https://github.com/AJAyanbisi), with 💛 for the Figma community.
