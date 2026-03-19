@@ -1,0 +1,14 @@
+{
+  "name": "figma-tailwind-copier",
+  "version": "1.0.0",
+  "description": "Select any Figma element and get the exact Tailwind CSS classes",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.98.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}

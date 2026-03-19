@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        padding: 16px;
+        font-size: 13px;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #2a2a4a;
+      }
+
+      .header h1 {
+        font-size: 15px;
+        font-weight: 600;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .logo {
+        width: 20px;
+        height: 20px;
+        background: linear-gradient(135deg, #38bdf8, #818cf8);
+        border-radius: 4px;
+      }
+
+      .refresh-btn {
+        background: none;
+        border: 1px solid #3a3a5a;
+        color: #a0a0c0;
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.15s;
+      }
+
+      .refresh-btn:hover {
+        background: #2a2a4a;
+        color: #ffffff;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 48px 16px;
+        color: #6a6a8a;
+      }
+
+      .empty-state .icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+      }
+
+      .empty-state p {
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .node-card {
+        background: #222244;
+        border: 1px solid #2a2a4a;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+
+      .node-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .node-name {
+        font-weight: 600;
+        color: #ffffff;
+        font-size: 13px;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .node-type {
+        font-size: 11px;
+        color: #818cf8;
+        background: rgba(129, 140, 248, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+
+      .classes-box {
+        background: #16162e;
+        border: 1px solid #2a2a4a;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        color: #38bdf8;
+        word-break: break-all;
+        cursor: pointer;
+        transition: border-color 0.15s;
+        position: relative;
+      }
+
+      .classes-box:hover {
+        border-color: #38bdf8;
+      }
+
+      .classes-box .copy-hint {
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        font-size: 10px;
+        color: #4a4a6a;
+        font-family: Inter, sans-serif;
+      }
+
+      .classes-box:hover .copy-hint {
+        color: #38bdf8;
+      }
+
+      .classes-box.copied {
+        border-color: #22c55e;
+      }
+
+      .classes-box.copied .copy-hint {
+        color: #22c55e;
+      }
+
+      .no-classes {
+        color: #4a4a6a;
+        font-style: italic;
+        font-family: Inter, sans-serif;
+      }
+
+      .class-count {
+        font-size: 11px;
+        color: #6a6a8a;
+        margin-top: 8px;
+      }
+
+      .copy-all-btn {
+        width: 100%;
+        padding: 10px;
+        background: linear-gradient(135deg, #38bdf8, #818cf8);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+        margin-top: 4px;
+      }
+
+      .copy-all-btn:hover {
+        opacity: 0.9;
+      }
+
+      .copy-all-btn:active {
+        transform: scale(0.98);
+      }
+
+      .footer {
+        margin-top: 16px;
+        text-align: center;
+        font-size: 11px;
+        color: #4a4a6a;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>
+        <div class="logo"></div>
+        Tailwind Copier
+      </h1>
+      <button class="refresh-btn" id="refreshBtn">Refresh</button>
+    </div>
+
+    <div id="content">
+      <div class="empty-state">
+        <div class="icon">&#9654;</div>
+        <p>Select an element in Figma<br />to see its Tailwind classes</p>
+      </div>
+    </div>
+
+    <div class="footer">Click any class box to copy</div>
+
+    <script>
+      const content = document.getElementById("content");
+      const refreshBtn = document.getElementById("refreshBtn");
+
+      refreshBtn.addEventListener("click", () => {
+        parent.postMessage({ pluginMessage: { type: "refresh" } }, "*");
+      });
+
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        if (msg.type === "no-selection") {
+          content.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">&#9654;</div>
+              <p>Select an element in Figma<br>to see its Tailwind classes</p>
+            </div>
+          `;
+          return;
+        }
+
+        if (msg.type === "selection") {
+          let html = "";
+
+          for (const item of msg.data) {
+            const classString = item.classes.join(" ");
+            const classCount = item.classes.length;
+
+            html += `
+              <div class="node-card">
+                <div class="node-header">
+                  <span class="node-name" title="${item.name}">${item.name}</span>
+                  <span class="node-type">${item.type}</span>
+                </div>
+                <div class="classes-box" data-classes="${classString}" onclick="copyClasses(this)">
+                  <span class="copy-hint">click to copy</span>
+                  ${classCount > 0 ? classString : '<span class="no-classes">No Tailwind classes detected</span>'}
+                </div>
+                ${classCount > 0 ? `<div class="class-count">${classCount} classes</div>` : ""}
+              </div>
+            `;
+          }
+
+          // Copy all button if multiple selections
+          if (msg.data.length > 1) {
+            const allClasses = msg.data
+              .map((item) => item.classes.join(" "))
+              .filter((c) => c.length > 0)
+              .join("\n");
+            html += `<button class="copy-all-btn" onclick="copyAll('${allClasses.replace(/'/g, "\\'")}')">Copy All Classes</button>`;
+          } else if (msg.data.length === 1 && msg.data[0].classes.length > 0) {
+            const classes = msg.data[0].classes.join(" ");
+            html += `<button class="copy-all-btn" onclick="copyAll('${classes.replace(/'/g, "\\'")}')">Copy Classes</button>`;
+          }
+
+          content.innerHTML = html;
+        }
+      };
+
+      function copyClasses(el) {
+        const classes = el.getAttribute("data-classes");
+        if (!classes) return;
+
+        navigator.clipboard.writeText(classes).then(() => {
+          el.classList.add("copied");
+          el.querySelector(".copy-hint").textContent = "copied!";
+          parent.postMessage({ pluginMessage: { type: "copy" } }, "*");
+
+          setTimeout(() => {
+            el.classList.remove("copied");
+            el.querySelector(".copy-hint").textContent = "click to copy";
+          }, 2000);
+        });
+      }
+
+      function copyAll(classes) {
+        navigator.clipboard.writeText(classes).then(() => {
+          parent.postMessage({ pluginMessage: { type: "copy" } }, "*");
+          const btn = document.querySelector(".copy-all-btn");
+          btn.textContent = "Copied!";
+          btn.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
+          setTimeout(() => {
+            btn.textContent = "Copy Classes";
+            btn.style.background =
+              "linear-gradient(135deg, #38bdf8, #818cf8)";
+          }, 2000);
+        });
+      }
+    </script>
+  </body>
+</html>
