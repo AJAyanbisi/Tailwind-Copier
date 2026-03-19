@@ -180,11 +180,68 @@
         transform: scale(0.98);
       }
 
+      /* Preview Section */
+      .preview-section {
+        margin-top: 16px;
+        border-top: 1px solid #2a2a4a;
+        padding-top: 14px;
+      }
+
+      .preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .preview-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .preview-label {
+        font-size: 10px;
+        color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+
+      .preview-container {
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 24px;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .preview-element {
+        transition: all 0.2s;
+      }
+
+      .preview-text {
+        font-size: 11px;
+        color: #6a6a8a;
+        margin-top: 8px;
+        text-align: center;
+      }
+
       .footer {
         margin-top: 16px;
         text-align: center;
         font-size: 11px;
         color: #4a4a6a;
+      }
+
+      /* Hidden textarea for clipboard fallback */
+      .clipboard-area {
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
       }
     </style>
   </head>
@@ -204,11 +261,394 @@
       </div>
     </div>
 
+    <div id="previewSection" class="preview-section" style="display: none">
+      <div class="preview-header">
+        <span class="preview-title">Live Preview</span>
+        <span class="preview-label">PREVIEW</span>
+      </div>
+      <div class="preview-container">
+        <div id="previewElement" class="preview-element">
+          Sample Text
+        </div>
+      </div>
+      <p class="preview-text">Shows how your Tailwind classes render</p>
+    </div>
+
     <div class="footer">Click any class box to copy</div>
+
+    <textarea class="clipboard-area" id="clipboardArea"></textarea>
 
     <script>
       const content = document.getElementById("content");
       const refreshBtn = document.getElementById("refreshBtn");
+      const previewSection = document.getElementById("previewSection");
+      const previewElement = document.getElementById("previewElement");
+      const clipboardArea = document.getElementById("clipboardArea");
+
+      // Reliable copy function that works in Figma's sandboxed iframe
+      function copyToClipboard(text) {
+        // Try modern API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text).then(
+            () => true,
+            () => fallbackCopy(text)
+          );
+        }
+        return Promise.resolve(fallbackCopy(text));
+      }
+
+      function fallbackCopy(text) {
+        clipboardArea.value = text;
+        clipboardArea.select();
+        clipboardArea.setSelectionRange(0, 99999);
+        try {
+          document.execCommand("copy");
+          return true;
+        } catch (e) {
+          // Last resort: prompt user to copy manually
+          window.prompt("Copy these classes:", text);
+          return true;
+        }
+      }
+
+      // Tailwind class to inline CSS mapping for live preview
+      function tailwindToInlineCSS(classes) {
+        const styles = {};
+        const classList = classes.split(" ").filter(Boolean);
+
+        const map = {
+          // Display
+          flex: { display: "flex" },
+          "flex-row": { flexDirection: "row" },
+          "flex-col": { flexDirection: "column" },
+          "flex-wrap": { flexWrap: "wrap" },
+          "items-start": { alignItems: "flex-start" },
+          "items-center": { alignItems: "center" },
+          "items-end": { alignItems: "flex-end" },
+          "items-baseline": { alignItems: "baseline" },
+          "justify-start": { justifyContent: "flex-start" },
+          "justify-center": { justifyContent: "center" },
+          "justify-end": { justifyContent: "flex-end" },
+          "justify-between": { justifyContent: "space-between" },
+
+          // Text alignment
+          "text-center": { textAlign: "center" },
+          "text-right": { textAlign: "right" },
+          "text-left": { textAlign: "left" },
+          "text-justify": { textAlign: "justify" },
+
+          // Font weight
+          "font-thin": { fontWeight: "100" },
+          "font-extralight": { fontWeight: "200" },
+          "font-light": { fontWeight: "300" },
+          "font-normal": { fontWeight: "400" },
+          "font-medium": { fontWeight: "500" },
+          "font-semibold": { fontWeight: "600" },
+          "font-bold": { fontWeight: "700" },
+          "font-extrabold": { fontWeight: "800" },
+          "font-black": { fontWeight: "900" },
+
+          // Font size
+          "text-xs": { fontSize: "12px" },
+          "text-sm": { fontSize: "14px" },
+          "text-base": { fontSize: "16px" },
+          "text-lg": { fontSize: "18px" },
+          "text-xl": { fontSize: "20px" },
+          "text-2xl": { fontSize: "24px" },
+          "text-3xl": { fontSize: "30px" },
+          "text-4xl": { fontSize: "36px" },
+          "text-5xl": { fontSize: "48px" },
+
+          // Line height
+          "leading-none": { lineHeight: "1" },
+          "leading-tight": { lineHeight: "1.25" },
+          "leading-snug": { lineHeight: "1.375" },
+          "leading-normal": { lineHeight: "1.5" },
+          "leading-relaxed": { lineHeight: "1.625" },
+          "leading-loose": { lineHeight: "2" },
+
+          // Border radius
+          "rounded-none": { borderRadius: "0" },
+          "rounded-sm": { borderRadius: "2px" },
+          rounded: { borderRadius: "4px" },
+          "rounded-md": { borderRadius: "6px" },
+          "rounded-lg": { borderRadius: "8px" },
+          "rounded-xl": { borderRadius: "12px" },
+          "rounded-2xl": { borderRadius: "16px" },
+          "rounded-3xl": { borderRadius: "24px" },
+          "rounded-full": { borderRadius: "9999px" },
+
+          // Shadows
+          "shadow-sm": { boxShadow: "0 1px 2px rgba(0,0,0,0.05)" },
+          shadow: { boxShadow: "0 1px 3px rgba(0,0,0,0.1)" },
+          "shadow-md": {
+            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+          },
+          "shadow-lg": {
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+          },
+          "shadow-xl": {
+            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+          },
+          "shadow-2xl": {
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+          },
+
+          // Border
+          border: { border: "1px solid #e5e7eb" },
+          "border-0": { borderWidth: "0" },
+          "border-2": { borderWidth: "2px" },
+          "border-4": { borderWidth: "4px" },
+          "border-8": { borderWidth: "8px" },
+        };
+
+        // Color values for bg-, text-, border- prefixes
+        const colors = {
+          black: "#000000",
+          white: "#ffffff",
+          "slate-50": "#f8fafc",
+          "slate-100": "#f1f5f9",
+          "slate-200": "#e2e8f0",
+          "slate-300": "#cbd5e1",
+          "slate-400": "#94a3b8",
+          "slate-500": "#64748b",
+          "slate-600": "#475569",
+          "slate-700": "#334155",
+          "slate-800": "#1e293b",
+          "slate-900": "#0f172a",
+          "gray-50": "#f9fafb",
+          "gray-100": "#f3f4f6",
+          "gray-200": "#e5e7eb",
+          "gray-300": "#d1d5db",
+          "gray-400": "#9ca3af",
+          "gray-500": "#6b7280",
+          "gray-600": "#4b5563",
+          "gray-700": "#374151",
+          "gray-800": "#1f2937",
+          "gray-900": "#111827",
+          "red-50": "#fef2f2",
+          "red-100": "#fee2e2",
+          "red-200": "#fecaca",
+          "red-300": "#fca5a5",
+          "red-400": "#f87171",
+          "red-500": "#ef4444",
+          "red-600": "#dc2626",
+          "red-700": "#b91c1c",
+          "red-800": "#991b1b",
+          "red-900": "#7f1d1d",
+          "orange-500": "#f97316",
+          "yellow-500": "#eab308",
+          "green-50": "#f0fdf4",
+          "green-100": "#dcfce7",
+          "green-200": "#bbf7d0",
+          "green-300": "#86efac",
+          "green-400": "#4ade80",
+          "green-500": "#22c55e",
+          "green-600": "#16a34a",
+          "green-700": "#15803d",
+          "green-800": "#166534",
+          "green-900": "#14532d",
+          "blue-50": "#eff6ff",
+          "blue-100": "#dbeafe",
+          "blue-200": "#bfdbfe",
+          "blue-300": "#93c5fd",
+          "blue-400": "#60a5fa",
+          "blue-500": "#3b82f6",
+          "blue-600": "#2563eb",
+          "blue-700": "#1d4ed8",
+          "blue-800": "#1e40af",
+          "blue-900": "#1e3a8a",
+          "indigo-500": "#6366f1",
+          "indigo-600": "#4f46e5",
+          "violet-500": "#8b5cf6",
+          "purple-500": "#a855f7",
+          "purple-600": "#9333ea",
+          "pink-500": "#ec4899",
+          "pink-600": "#db2777",
+        };
+
+        // Spacing values
+        const spacing = {
+          0: "0px",
+          px: "1px",
+          0.5: "2px",
+          1: "4px",
+          1.5: "6px",
+          2: "8px",
+          2.5: "10px",
+          3: "12px",
+          3.5: "14px",
+          4: "16px",
+          5: "20px",
+          6: "24px",
+          7: "28px",
+          8: "32px",
+          9: "36px",
+          10: "40px",
+          11: "44px",
+          12: "48px",
+          14: "56px",
+          16: "64px",
+          20: "80px",
+          24: "96px",
+        };
+
+        for (const cls of classList) {
+          // Direct match
+          if (map[cls]) {
+            Object.assign(styles, map[cls]);
+            continue;
+          }
+
+          // bg-{color}
+          const bgMatch = cls.match(/^bg-(.+)$/);
+          if (bgMatch && colors[bgMatch[1]]) {
+            styles.backgroundColor = colors[bgMatch[1]];
+            continue;
+          }
+
+          // text-{color}
+          const textColorMatch = cls.match(/^text-((?:slate|gray|red|orange|yellow|green|blue|indigo|violet|purple|pink|black|white)(?:-\d+)?)$/);
+          if (textColorMatch && colors[textColorMatch[1]]) {
+            styles.color = colors[textColorMatch[1]];
+            continue;
+          }
+
+          // border-{color}
+          const borderColorMatch = cls.match(/^border-(.+)$/);
+          if (borderColorMatch && colors[borderColorMatch[1]]) {
+            styles.borderColor = colors[borderColorMatch[1]];
+            continue;
+          }
+
+          // Padding
+          const pMatch = cls.match(/^p-(.+)$/);
+          if (pMatch && spacing[pMatch[1]]) {
+            styles.padding = spacing[pMatch[1]];
+            continue;
+          }
+          const pxMatch = cls.match(/^px-(.+)$/);
+          if (pxMatch && spacing[pxMatch[1]]) {
+            styles.paddingLeft = spacing[pxMatch[1]];
+            styles.paddingRight = spacing[pxMatch[1]];
+            continue;
+          }
+          const pyMatch = cls.match(/^py-(.+)$/);
+          if (pyMatch && spacing[pyMatch[1]]) {
+            styles.paddingTop = spacing[pyMatch[1]];
+            styles.paddingBottom = spacing[pyMatch[1]];
+            continue;
+          }
+          const ptMatch = cls.match(/^pt-(.+)$/);
+          if (ptMatch && spacing[ptMatch[1]]) {
+            styles.paddingTop = spacing[ptMatch[1]];
+            continue;
+          }
+          const pbMatch = cls.match(/^pb-(.+)$/);
+          if (pbMatch && spacing[pbMatch[1]]) {
+            styles.paddingBottom = spacing[pbMatch[1]];
+            continue;
+          }
+          const plMatch = cls.match(/^pl-(.+)$/);
+          if (plMatch && spacing[plMatch[1]]) {
+            styles.paddingLeft = spacing[plMatch[1]];
+            continue;
+          }
+          const prMatch = cls.match(/^pr-(.+)$/);
+          if (prMatch && spacing[prMatch[1]]) {
+            styles.paddingRight = spacing[prMatch[1]];
+            continue;
+          }
+
+          // Gap
+          const gapMatch = cls.match(/^gap-(.+)$/);
+          if (gapMatch && spacing[gapMatch[1]]) {
+            styles.gap = spacing[gapMatch[1]];
+            continue;
+          }
+
+          // Width
+          const wMatch = cls.match(/^w-(.+)$/);
+          if (wMatch) {
+            if (wMatch[1] === "full") styles.width = "100%";
+            else if (spacing[wMatch[1]]) styles.width = spacing[wMatch[1]];
+            continue;
+          }
+
+          // Height
+          const hMatch = cls.match(/^h-(.+)$/);
+          if (hMatch) {
+            if (hMatch[1] === "full") styles.height = "100%";
+            else if (spacing[hMatch[1]]) styles.height = spacing[hMatch[1]];
+            continue;
+          }
+
+          // Opacity
+          const opMatch = cls.match(/^opacity-(\d+)$/);
+          if (opMatch) {
+            styles.opacity = String(parseInt(opMatch[1]) / 100);
+            continue;
+          }
+
+          // Arbitrary values like text-[14px], p-[20px], bg-[#ff0000]
+          const arbMatch = cls.match(/^(.+)-\[(.+)\]$/);
+          if (arbMatch) {
+            const prop = arbMatch[1];
+            const val = arbMatch[2];
+            if (prop === "text") styles.fontSize = val;
+            else if (prop === "bg") styles.backgroundColor = val;
+            else if (prop === "p") styles.padding = val;
+            else if (prop === "px") {
+              styles.paddingLeft = val;
+              styles.paddingRight = val;
+            }
+            else if (prop === "py") {
+              styles.paddingTop = val;
+              styles.paddingBottom = val;
+            }
+            else if (prop === "w") styles.width = val;
+            else if (prop === "h") styles.height = val;
+            else if (prop === "rounded") styles.borderRadius = val;
+            else if (prop === "gap") styles.gap = val;
+            else if (prop === "font") styles.fontWeight = val;
+            else if (prop === "leading") styles.lineHeight = val;
+            else if (prop === "tracking") styles.letterSpacing = val;
+            continue;
+          }
+        }
+
+        return styles;
+      }
+
+      function updatePreview(classString) {
+        if (!classString || classString.trim() === "") {
+          previewSection.style.display = "none";
+          return;
+        }
+
+        previewSection.style.display = "block";
+        const styles = tailwindToInlineCSS(classString);
+
+        // Reset preview element
+        previewElement.removeAttribute("style");
+
+        // Check if it's a text node (has text-related classes)
+        const hasTextClasses = classString.match(
+          /text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)|font-(thin|light|normal|medium|semibold|bold|extrabold|black)/
+        );
+
+        if (hasTextClasses) {
+          previewElement.textContent = "Sample Text";
+        } else {
+          previewElement.textContent = "";
+          // Give it minimum dimensions so bg/border/shadow are visible
+          if (!styles.width) styles.minWidth = "120px";
+          if (!styles.height) styles.minHeight = "60px";
+        }
+
+        // Apply all computed styles
+        Object.assign(previewElement.style, styles);
+      }
 
       refreshBtn.addEventListener("click", () => {
         parent.postMessage({ pluginMessage: { type: "refresh" } }, "*");
@@ -225,6 +665,7 @@
               <p>Select an element in Figma<br>to see its Tailwind classes</p>
             </div>
           `;
+          previewSection.style.display = "none";
           return;
         }
 
@@ -234,6 +675,10 @@
           for (const item of msg.data) {
             const classString = item.classes.join(" ");
             const classCount = item.classes.length;
+            // Escape for data attribute
+            const escaped = classString
+              .replace(/&/g, "&amp;")
+              .replace(/"/g, "&quot;");
 
             html += `
               <div class="node-card">
@@ -241,7 +686,7 @@
                   <span class="node-name" title="${item.name}">${item.name}</span>
                   <span class="node-type">${item.type}</span>
                 </div>
-                <div class="classes-box" data-classes="${classString}" onclick="copyClasses(this)">
+                <div class="classes-box" data-classes="${escaped}" onclick="copyClasses(this)">
                   <span class="copy-hint">click to copy</span>
                   ${classCount > 0 ? classString : '<span class="no-classes">No Tailwind classes detected</span>'}
                 </div>
@@ -250,19 +695,29 @@
             `;
           }
 
-          // Copy all button if multiple selections
+          // Copy button
           if (msg.data.length > 1) {
             const allClasses = msg.data
               .map((item) => item.classes.join(" "))
               .filter((c) => c.length > 0)
               .join("\n");
-            html += `<button class="copy-all-btn" onclick="copyAll('${allClasses.replace(/'/g, "\\'")}')">Copy All Classes</button>`;
+            html += `<button class="copy-all-btn" onclick="copyAllClasses()">Copy All Classes</button>`;
+            // Store for the button handler
+            window._allClasses = allClasses;
           } else if (msg.data.length === 1 && msg.data[0].classes.length > 0) {
             const classes = msg.data[0].classes.join(" ");
-            html += `<button class="copy-all-btn" onclick="copyAll('${classes.replace(/'/g, "\\'")}')">Copy Classes</button>`;
+            html += `<button class="copy-all-btn" onclick="copyAllClasses()">Copy Classes</button>`;
+            window._allClasses = classes;
           }
 
           content.innerHTML = html;
+
+          // Update preview with the first selected element's classes
+          if (msg.data.length > 0 && msg.data[0].classes.length > 0) {
+            updatePreview(msg.data[0].classes.join(" "));
+          } else {
+            previewSection.style.display = "none";
+          }
         }
       };
 
@@ -270,7 +725,7 @@
         const classes = el.getAttribute("data-classes");
         if (!classes) return;
 
-        navigator.clipboard.writeText(classes).then(() => {
+        copyToClipboard(classes).then(() => {
           el.classList.add("copied");
           el.querySelector(".copy-hint").textContent = "copied!";
           parent.postMessage({ pluginMessage: { type: "copy" } }, "*");
@@ -282,14 +737,20 @@
         });
       }
 
-      function copyAll(classes) {
-        navigator.clipboard.writeText(classes).then(() => {
+      function copyAllClasses() {
+        const classes = window._allClasses;
+        if (!classes) return;
+
+        copyToClipboard(classes).then(() => {
           parent.postMessage({ pluginMessage: { type: "copy" } }, "*");
           const btn = document.querySelector(".copy-all-btn");
           btn.textContent = "Copied!";
           btn.style.background = "linear-gradient(135deg, #22c55e, #16a34a)";
           setTimeout(() => {
-            btn.textContent = "Copy Classes";
+            btn.textContent =
+              document.querySelectorAll(".node-card").length > 1
+                ? "Copy All Classes"
+                : "Copy Classes";
             btn.style.background =
               "linear-gradient(135deg, #38bdf8, #818cf8)";
           }, 2000);

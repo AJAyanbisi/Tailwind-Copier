@@ -1,6 +1,6 @@
 import { convertNode } from "./converter";
 
-figma.showUI(__html__, { width: 400, height: 500 });
+figma.showUI(__html__, { width: 400, height: 600 });
 
 // Listen for selection changes
 figma.on("selectionchange", () => {
